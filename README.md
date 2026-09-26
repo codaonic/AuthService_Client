@@ -16,6 +16,7 @@ Not published to PyPI — install it directly from this repo (see below).
 - [Install](#install)
 - [Framework-agnostic validation](#framework-agnostic-validation)
 - [FastAPI](#fastapi)
+- [Custom middleware with your own authorization logic](#custom-middleware-with-your-own-authorization-logic)
 - [Other languages](#other-languages)
 - [Registering your service](#registering-your-service)
 - [Local development](#local-development)
@@ -106,6 +107,56 @@ A request with no/invalid token gets a `401` with a
 `WWW-Authenticate: Bearer resource_metadata="…"` header pointing at your
 `/.well-known/oauth-protected-resource` — the same 401-then-discover pattern an
 MCP client expects.
+
+## Custom middleware with your own authorization logic
+
+`make_auth_dependency` / `make_scope_dependency` cover the common case, but
+`TokenValidator` is plain Python — nothing stops you from calling it yourself
+from an ASGI middleware and layering on whatever authorization rules your
+service needs (roles, tenant checks, per-route policy, etc.) instead of, or
+alongside, scopes:
+
+```python
+from fastapi import FastAPI, Request
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
+
+from authservice_client import TokenValidator, TokenValidationError
+
+validator = TokenValidator(issuer=ISSUER, resource_id=RESOURCE_ID)
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        header = request.headers.get("Authorization", "")
+        if not header.startswith("Bearer "):
+            return JSONResponse({"detail": "missing_bearer_token"}, status_code=401)
+
+        try:
+            claims = validator.validate(header.removeprefix("Bearer ").strip())
+        except TokenValidationError as exc:
+            return JSONResponse({"detail": str(exc)}, status_code=401)
+
+        # your own authorization logic goes here, e.g. role- or tenant-based checks
+        if request.url.path.startswith("/admin") and claims.get("role") != "admin":
+            return JSONResponse({"detail": "forbidden"}, status_code=403)
+
+        request.state.claims = claims
+        return await call_next(request)
+
+
+app = FastAPI()
+app.add_middleware(AuthMiddleware)
+
+
+@app.get("/me")
+async def me(request: Request):
+    return {"sub": request.state.claims["sub"]}
+```
+
+This works the same way outside FastAPI too — any ASGI/WSGI middleware, or a
+plain decorator, can call `validator.validate(token)` and apply its own checks
+against the returned claims dict.
 
 ## Other languages
 
