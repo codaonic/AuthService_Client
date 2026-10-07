@@ -1,5 +1,5 @@
 [project]
-name = "authservice-client"
+name = "auth-client"
 version = "0.1.0"
 description = "Token validation and FastAPI helpers for services behind Codaonic's AuthService (OAuth 2.1 / OIDC)"
 readme = "README.md"
@@ -29,10 +29,10 @@ dependencies = [
 fastapi = ["fastapi>=0.110"]
 
 [project.urls]
-Homepage = "https://github.com/codaonic/AuthService_Client"
-Repository = "https://github.com/codaonic/AuthService_Client"
-Issues = "https://github.com/codaonic/AuthService_Client/issues"
-Changelog = "https://github.com/codaonic/AuthService_Client/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/codaonic/auth-client"
+Repository = "https://github.com/codaonic/auth-client"
+Issues = "https://github.com/codaonic/auth-client/issues"
+Changelog = "https://github.com/codaonic/auth-client/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [
