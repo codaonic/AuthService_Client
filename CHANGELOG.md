@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `.github/workflows/release.yml`: tagging `vX.Y.Z` runs all three test suites, builds the Python wheel/sdist and Node tarball, attaches them to a GitHub Release, and tags `go/vX.Y.Z` for the Go module proxy. Lets Python and Node be installed over plain HTTPS from the release assets — no `git` required in the installing environment.
+
 ### Changed
 
 - Renamed the project from `authservice-client` to `auth-client` (Python distribution name, Python module `auth_client`, repo name).

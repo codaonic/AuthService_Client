@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v3
+      - name: Python tests
+        run: uv run pytest
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - name: Go tests
+        run: cd go && go test ./...
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Node tests
+        run: cd node && npm ci && npm test
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Verify package versions match the tag
+        run: |
+          set -eu
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PY_VERSION=$(grep -m1 '^version' pyproject.toml | sed -E 's/version = "(.*)"/\1/')
+          NODE_VERSION=$(node -p "require('./node/package.json').version")
+          if [ "$TAG_VERSION" != "$PY_VERSION" ] || [ "$TAG_VERSION" != "$NODE_VERSION" ]; then
+            echo "Version mismatch: tag=$TAG_VERSION pyproject.toml=$PY_VERSION node/package.json=$NODE_VERSION"
+            echo "Bump both files to $TAG_VERSION (and update CHANGELOG.md) before tagging."
+            exit 1
+          fi
+
+      - name: Build Python package
+        run: uv build
+
+      - name: Build Node package
+        run: |
+          cd node
+          npm ci
+          npm run build
+          npm pack
+
+      - name: Tag the Go submodule
+        # Go's module proxy resolves a subdirectory module's version from a
+        # tag prefixed with its path, e.g. go/v0.2.0 -- plain v0.2.0 only
+        # works for @main / @latest, not a pinned version.
+        run: |
+          git tag "go/${GITHUB_REF_NAME}" "${GITHUB_REF_NAME}"
+          git push origin "go/${GITHUB_REF_NAME}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            node/*.tgz

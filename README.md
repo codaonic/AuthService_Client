@@ -19,8 +19,12 @@ A client is available for:
 - [Go](#go) — `github.com/codaonic/auth-client/go`, with `net/http` middleware and `Client`
 - [Node / TypeScript](#node--typescript) — `auth-client`, with Express middleware and `AuthServiceClient`
 
-None of these are published to a package registry — install each directly from this
-repo (see below).
+None of these are published to a package registry. Each tagged release attaches
+installable files (a Python wheel/sdist, an npm tarball) directly to the matching
+[GitHub Release](https://github.com/codaonic/auth-client/releases) — installed over
+plain HTTPS, with no `git` binary required in the installing environment. Go needs
+no release asset at all; `go get` already fetches over HTTPS via the Go module
+proxy.
 
 ## Contents
 
@@ -41,33 +45,29 @@ repo (see below).
 
 ### Install
 
-This isn't on PyPI, so install it straight from GitHub. Pin a tag (e.g. `@v0.1.0`)
-for anything beyond local experimentation — `main` can move.
+This isn't on PyPI. Every tagged release attaches a wheel and an sdist to its
+[GitHub Release](https://github.com/codaonic/auth-client/releases) — install
+straight from that URL, no `git` required. Pick a version (e.g. `v0.1.0`) and
+substitute it below:
 
 ```bash
 # uv
-uv add "auth-client @ git+https://github.com/codaonic/auth-client.git@main"
+uv add "https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth_client-0.1.0-py3-none-any.whl"
 # with the FastAPI helpers:
-uv add "auth-client[fastapi] @ git+https://github.com/codaonic/auth-client.git@main"
+uv add "auth-client[fastapi] @ https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth_client-0.1.0-py3-none-any.whl"
 
 # pip
-pip install "auth-client[fastapi] @ git+https://github.com/codaonic/auth-client.git@main"
-
-# poetry
-poetry add "git+https://github.com/codaonic/auth-client.git#main"
+pip install "auth-client[fastapi] @ https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth_client-0.1.0-py3-none-any.whl"
 ```
 
-Pinned to a release tag instead of a branch:
+If this repo is private for you, that URL needs an auth header pip/uv don't send
+by default — download it with a token first, then install the local file:
 
 ```bash
-uv add "auth-client @ git+https://github.com/codaonic/auth-client.git@v0.1.0"
-```
-
-If this repo is private for you, use the SSH form instead — whoever installs it
-needs GitHub access already set up (SSH key or a credential helper):
-
-```bash
-uv add "auth-client @ git+ssh://git@github.com/codaonic/auth-client.git@main"
+curl -L -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -o auth_client-0.1.0-py3-none-any.whl \
+  "https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth_client-0.1.0-py3-none-any.whl"
+pip install "./auth_client-0.1.0-py3-none-any.whl[fastapi]"
 ```
 
 ### Framework-agnostic validation
@@ -176,10 +176,12 @@ against the returned claims dict.
 
 ## Go
 
-Lives in [`go/`](go/) as its own module. Install it with:
+Lives in [`go/`](go/) as its own module. `go get` already fetches over HTTPS via
+the Go module proxy — no `git` binary needed, and no release asset either:
 
 ```bash
-go get github.com/codaonic/auth-client/go@main
+go get github.com/codaonic/auth-client/go@main    # latest commit
+go get github.com/codaonic/auth-client/go@v0.1.0   # pinned to a release
 ```
 
 Framework-agnostic validation:
@@ -255,10 +257,22 @@ go test ./...
 
 Lives in [`node/`](node/) as its own package, built on
 [`jose`](https://github.com/panva/jose) for JWKS fetching/caching and JWT
-verification. Install it with:
+verification. Not on npm — every tagged release attaches a tarball to its
+[GitHub Release](https://github.com/codaonic/auth-client/releases); install
+straight from that URL, no `git` required:
 
 ```bash
-npm install "auth-client@git+https://github.com/codaonic/auth-client.git#main:node"
+npm install "https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth-client-0.1.0.tgz"
+```
+
+Private repo? Same workaround as the Python package — download the asset with
+an auth header first, then install the local file:
+
+```bash
+curl -L -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -o auth-client-0.1.0.tgz \
+  "https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth-client-0.1.0.tgz"
+npm install ./auth-client-0.1.0.tgz
 ```
 
 Framework-agnostic validation:
@@ -467,9 +481,21 @@ language) — none of them ever talk to a real auth service.
 ## Versioning
 
 This project follows [Semantic Versioning](https://semver.org/). See
-[CHANGELOG.md](CHANGELOG.md) for release notes, and use a tag (`@vX.Y.Z`) in
-your install command to pin a specific version. The Python, Go, and Node
+[CHANGELOG.md](CHANGELOG.md) for release notes. The Python, Go, and Node
 clients are versioned and released together, from the same tag.
+
+Cutting a release (`.github/workflows/release.yml`):
+
+1. Bump `version` in `pyproject.toml` and `node/package.json` to the same
+   value, and add a dated section to `CHANGELOG.md`. Commit.
+2. Push a tag matching that version: `git tag v0.2.0 && git push origin v0.2.0`.
+3. The workflow runs all three test suites, builds the Python wheel/sdist and
+   the Node tarball, attaches them to a new GitHub Release, and tags
+   `go/v0.2.0` so `go get .../go@v0.2.0` resolves correctly (Go's module proxy
+   needs a path-prefixed tag for a module that lives in a subdirectory).
+
+A version mismatch between the tag and either `pyproject.toml` or
+`node/package.json` fails the release before anything is published.
 
 ## License
 
