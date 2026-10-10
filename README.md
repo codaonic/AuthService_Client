@@ -8,14 +8,16 @@
 
 Token validation and web-framework integration helpers for any service that sits
 behind [AuthService](https://github.com/codaonic/AuthService) — a website's API, an
-MCP server, or any other OAuth 2.1 / OIDC resource server. Nothing here talks to the
-auth service except to fetch and cache its JWKS; every request is verified locally.
+MCP server, or any other OAuth 2.1 / OIDC resource server. Token validation never
+talks to the auth service except to fetch and cache its JWKS; every request is verified
+locally. For applications that sign users in, each client also wraps the auth service's
+[logout](#sign-in-timeout-and-logout).
 
 A client is available for:
 
-- [Python](#python) — `auth_client`, with FastAPI helpers
-- [Go](#go) — `github.com/codaonic/auth-client/go`, with `net/http` middleware
-- [Node / TypeScript](#node--typescript) — `auth-client`, with Express middleware
+- [Python](#python) — `auth_client`, with FastAPI helpers and `AuthServiceClient`
+- [Go](#go) — `github.com/codaonic/auth-client/go`, with `net/http` middleware and `Client`
+- [Node / TypeScript](#node--typescript) — `auth-client`, with Express middleware and `AuthServiceClient`
 
 None of these are published to a package registry — install each directly from this
 repo (see below).
@@ -30,6 +32,7 @@ repo (see below).
 - [Go](#go)
 - [Node / TypeScript](#node--typescript)
 - [Registering your service](#registering-your-service)
+- [Sign-in timeout and logout](#sign-in-timeout-and-logout)
 - [Local development](#local-development)
 - [Versioning](#versioning)
 - [License](#license)
@@ -337,6 +340,109 @@ Dynamic Client Registration: `POST {issuer}/register`.
 See the [AuthService repo](https://github.com/codaonic/AuthService) for the
 auth server itself, its admin UI, and complete runnable example resource
 servers built on these SDKs.
+
+## Sign-in timeout and logout
+
+An application registered with AuthService can have its own **sign-in
+timeout** (on by default for websites, at 7 days; off for MCP clients, AI
+assistants and services, which follow the standard session and refresh-token
+lifetimes) and can **log a user out of itself** without affecting any other application — including ones that share
+its login group. Which of these you need to handle depends on what your
+service is.
+
+### If your service only validates tokens (an API or MCP server)
+
+Nothing changes. These clients verify each access token locally, so a token
+stays valid until its own `exp` (10 minutes by default) even after the user
+logs out or their sign-in times out. That short lifetime is the revocation
+window; there is no per-request call back to the auth service.
+
+### If your service signs users in (a website backend, a mobile or desktop app)
+
+Two things to handle.
+
+**1. A refused refresh means the sign-in is over.** Once the application's
+timeout (if it has one) has passed, or the user has been logged out,
+`POST {issuer}/token` with `grant_type=refresh_token` returns
+`400 invalid_grant`. Clear your own session and send the user through
+`/authorize` again. Refresh tokens are one-time-use, so always store the new
+one from a successful refresh.
+
+**2. Log out through this SDK.** Clearing your own session cookie is not
+enough — the auth service would recognize the browser and sign the user
+straight back in. Each client ships an `AuthServiceClient` for this, so the
+call lives in the same library as your token validation. The auth service
+renders no logout page of its own; this sits behind your own logout button.
+
+`logout(refresh_token)` reports whether the user was signed out:
+
+| Result | Meaning | What to do |
+|---|---|---|
+| `true` | Signed out; every refresh token your application held for that user is revoked | Clear your own session |
+| `false` | The auth service no longer knows that token (already used, expired, or revoked) | Clear your own session — there is nothing left to sign out |
+| `LogoutError` | Network failure, wrong client credentials, or an unexpected response | Retry or surface the error |
+
+Python:
+
+```python
+from auth_client import AuthServiceClient, LogoutError
+
+auth = AuthServiceClient(
+    "https://auth.yourdomain.com",
+    "your-app",
+    client_secret=CLIENT_SECRET,  # omit for a public client
+)
+
+signed_out = auth.logout(refresh_token)          # sync
+signed_out = await auth.alogout(refresh_token)   # inside an async handler
+```
+
+Go:
+
+```go
+auth := authclient.NewClient(
+    "https://auth.yourdomain.com",
+    "your-app",
+    authclient.WithClientSecret(clientSecret), // omit for a public client
+)
+
+signedOut, err := auth.Logout(ctx, refreshToken)
+```
+
+Node / TypeScript:
+
+```ts
+import { AuthServiceClient, LogoutError } from "auth-client";
+
+const auth = new AuthServiceClient("https://auth.yourdomain.com", "your-app", {
+  clientSecret: CLIENT_SECRET, // omit for a public client
+});
+
+const signedOut = await auth.logout(refreshToken);
+```
+
+**If you hold no refresh token**, redirect the browser instead. Each client
+builds the URL for you:
+
+```python
+auth.logout_url("https://yourapp.com/signed-out", state="abc")
+```
+
+```go
+auth.LogoutURL("https://yourapp.com/signed-out", "abc")
+```
+
+```ts
+auth.logoutUrl({ postLogoutRedirectUri: "https://yourapp.com/signed-out", state: "abc" });
+```
+
+The return URL must be listed under the application's "After-logout URLs" in
+the admin UI; the user comes back to it with `state` appended. The endpoint is
+also published as `end_session_endpoint` in
+`{issuer}/.well-known/openid-configuration`, so a standard OIDC library can
+discover it.
+
+Logging out never signs the user out of any other application.
 
 ## Local development
 
