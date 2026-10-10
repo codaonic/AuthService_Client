@@ -1,6 +1,6 @@
 # auth-client
 
-![version](https://img.shields.io/badge/version-0.1.0-blue)
+![version](https://img.shields.io/badge/version-0.2.0-blue)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![Go](https://img.shields.io/badge/go-1.21%2B-blue)
 ![Node](https://img.shields.io/badge/node-18%2B-blue)
@@ -47,17 +47,17 @@ proxy.
 
 This isn't on PyPI. Every tagged release attaches a wheel and an sdist to its
 [GitHub Release](https://github.com/codaonic/auth-client/releases) — install
-straight from that URL, no `git` required. Pick a version (e.g. `v0.1.0`) and
+straight from that URL, no `git` required. Pick a version (e.g. `v0.2.0`) and
 substitute it below:
 
 ```bash
 # uv
-uv add "https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth_client-0.1.0-py3-none-any.whl"
+uv add "https://github.com/codaonic/auth-client/releases/download/v0.2.0/auth_client-0.2.0-py3-none-any.whl"
 # with the FastAPI helpers:
-uv add "auth-client[fastapi] @ https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth_client-0.1.0-py3-none-any.whl"
+uv add "auth-client[fastapi] @ https://github.com/codaonic/auth-client/releases/download/v0.2.0/auth_client-0.2.0-py3-none-any.whl"
 
 # pip
-pip install "auth-client[fastapi] @ https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth_client-0.1.0-py3-none-any.whl"
+pip install "auth-client[fastapi] @ https://github.com/codaonic/auth-client/releases/download/v0.2.0/auth_client-0.2.0-py3-none-any.whl"
 ```
 
 If this repo is private for you, that URL needs an auth header pip/uv don't send
@@ -65,9 +65,9 @@ by default — download it with a token first, then install the local file:
 
 ```bash
 curl -L -H "Authorization: Bearer $GITHUB_TOKEN" \
-  -o auth_client-0.1.0-py3-none-any.whl \
-  "https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth_client-0.1.0-py3-none-any.whl"
-pip install "./auth_client-0.1.0-py3-none-any.whl[fastapi]"
+  -o auth_client-0.2.0-py3-none-any.whl \
+  "https://github.com/codaonic/auth-client/releases/download/v0.2.0/auth_client-0.2.0-py3-none-any.whl"
+pip install "./auth_client-0.2.0-py3-none-any.whl[fastapi]"
 ```
 
 ### Framework-agnostic validation
@@ -181,7 +181,7 @@ the Go module proxy — no `git` binary needed, and no release asset either:
 
 ```bash
 go get github.com/codaonic/auth-client/go@main    # latest commit
-go get github.com/codaonic/auth-client/go@v0.1.0   # pinned to a release
+go get github.com/codaonic/auth-client/go@v0.2.0   # pinned to a release
 ```
 
 Framework-agnostic validation:
@@ -262,7 +262,7 @@ verification. Not on npm — every tagged release attaches a tarball to its
 straight from that URL, no `git` required:
 
 ```bash
-npm install "https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth-client-0.1.0.tgz"
+npm install "https://github.com/codaonic/auth-client/releases/download/v0.2.0/auth-client-0.2.0.tgz"
 ```
 
 Private repo? Same workaround as the Python package — download the asset with
@@ -270,9 +270,9 @@ an auth header first, then install the local file:
 
 ```bash
 curl -L -H "Authorization: Bearer $GITHUB_TOKEN" \
-  -o auth-client-0.1.0.tgz \
-  "https://github.com/codaonic/auth-client/releases/download/v0.1.0/auth-client-0.1.0.tgz"
-npm install ./auth-client-0.1.0.tgz
+  -o auth-client-0.2.0.tgz \
+  "https://github.com/codaonic/auth-client/releases/download/v0.2.0/auth-client-0.2.0.tgz"
+npm install ./auth-client-0.2.0.tgz
 ```
 
 Framework-agnostic validation:
