@@ -1,6 +1,6 @@
 [project]
 name = "auth-client"
-version = "0.1.0"
+version = "0.2.0"
 description = "Token validation and FastAPI helpers for services behind Codaonic's AuthService (OAuth 2.1 / OIDC)"
 readme = "README.md"
 license = { text = "MIT" }

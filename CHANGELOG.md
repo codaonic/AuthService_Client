@@ -5,11 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-
-- `.github/workflows/release.yml`: tagging `vX.Y.Z` runs all three test suites, builds the Python wheel/sdist and Node tarball, attaches them to a GitHub Release, and tags `go/vX.Y.Z` for the Go module proxy. Lets Python and Node be installed over plain HTTPS from the release assets — no `git` required in the installing environment.
+## [0.2.0] - 2026-10-11
 
 ### Changed
 
@@ -21,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Node / TypeScript client (`node/`, package `auth-client`): `TokenValidator` (built on `jose`), Express middleware (`makeAuthMiddleware`, `makeScopeMiddleware`), and `protectedResourceRouter`, at feature parity with the Python client.
 - Logout for applications that sign users in, at parity across all three clients: Python `AuthServiceClient` (`logout`, async `alogout`, `logout_url`) with `LogoutError`; Go `Client` via `NewClient` (`Logout`, `LogoutURL`) with `*LogoutError`; Node `AuthServiceClient` (`logout`, `logoutUrl`) with `LogoutError`. Each signs a user out of the calling application only, via AuthService's `POST /logout`, or builds the browser-redirect URL.
 - README: "Sign-in timeout and logout" — how services behind AuthService handle the per-application sign-in timeout and log users out, with Python, Go, and Node examples.
+- `.github/workflows/release.yml`: tagging `vX.Y.Z` runs all three test suites, builds the Python wheel/sdist and Node tarball, attaches them to a GitHub Release, and tags `go/vX.Y.Z` for the Go module proxy. Lets Python and Node be installed over plain HTTPS from the release assets — no `git` required in the installing environment.
 
 ## [0.1.0] - 2026-09-27
 
